@@ -21,6 +21,7 @@ import os
 import sys
 import json
 import time
+import base64
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
@@ -201,6 +202,11 @@ def main():
     week_keys = [w for w in week_keys if datetime.fromisoformat(w).date() >= datetime(YEAR, 1, 1).date()]
     month_keys = sorted({k for bu in ("ACE", "SPADE") for m in agg["monthly"][bu]
                          for k in agg["monthly"][bu][m]})
+    # Drop the current calendar month: it's incomplete (only week(s) before this
+    # week) and its deals are too new to have converted, so its ratios are
+    # artificially low and would misread as a conversion drop.
+    current_month_key = f"{today_et.year}-{today_et.month:02d}-01"
+    month_keys = [k for k in month_keys if k != current_month_key]
 
     def fmt_week(k):
         d = datetime.fromisoformat(k).date()
@@ -225,10 +231,26 @@ def main():
     }
 
     os.makedirs("site", exist_ok=True)
-    html = TEMPLATE.replace("/*__DATA__*/null", json.dumps(out))
+    favicon_uri = "data:image/svg+xml;base64," + base64.b64encode(FAVICON_SVG.encode()).decode()
+    html = (TEMPLATE
+            .replace("__FAVICON__", favicon_uri)
+            .replace("/*__DATA__*/null", json.dumps(out)))
     with open("site/index.html", "w") as f:
         f.write(html)
     print(f"Wrote site/index.html ({out['generated']}).")
+
+
+# Tab favicon: perched crow (option 1), static — browsers don't animate favicons.
+FAVICON_SVG = (
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">'
+    '<ellipse cx="30" cy="37" rx="15" ry="11" fill="#23262E"/>'
+    '<circle cx="17" cy="25" r="8.5" fill="#23262E"/>'
+    '<polygon points="9,23 1,26.5 9,30" fill="#D85A30"/>'
+    '<polygon points="44,34 61,28 57,42" fill="#23262E"/>'
+    '<circle cx="15" cy="23" r="1.8" fill="#F3F1EA"/>'
+    '<path d="M31,30 C41,25 53,30 50,41 C43,43 34,39 29,32 Z" fill="#3A3F4A"/>'
+    '</svg>'
+)
 
 
 # ---------------------------------------------------------------------------
@@ -238,6 +260,7 @@ TEMPLATE = r"""<!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RevOps Conversion Report</title>
+<link rel="icon" type="image/svg+xml" href="__FAVICON__">
 <style>
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#2C2C2A;max-width:920px;margin:0 auto;padding:24px;background:#fff;}
 h1{font-size:20px;font-weight:600;margin:0 0 4px;}
@@ -253,9 +276,30 @@ h1{font-size:20px;font-weight:600;margin:0 0 4px;}
 .lg{display:flex;flex-wrap:wrap;gap:14px;margin-bottom:6px;font-size:11px;color:#5F5E5A;}
 .lg span{display:flex;align-items:center;gap:5px;}.lg i{width:15px;height:0;display:inline-block;}
 .wrap{position:relative;width:100%;height:300px;margin-bottom:26px;}
+.hdr{display:flex;align-items:center;gap:14px;}
+.logo{flex:none;width:72px;height:72px;}
+@keyframes flap5{0%,100%{transform:rotate(-14deg)}50%{transform:rotate(10deg)}}
+@keyframes draw5{0%{stroke-dashoffset:90}60%,100%{stroke-dashoffset:0}}
+.wing5{transform-origin:50px 15px;animation:flap5 0.65s ease-in-out infinite}
+.line5{stroke-dasharray:90;animation:draw5 2.8s ease-in-out infinite}
 </style></head><body>
-<h1>RevOps Weekly Conversion Report</h1>
-<div class="meta">Beam AI Deals &middot; calendar YTD &middot; excludes blank Business Unit &middot; <span id="gen"></span></div>
+<div class="hdr">
+  <svg class="logo" viewBox="0 0 64 64" role="img" aria-label="crow perched atop a rising trend line">
+    <polyline class="line5" points="5,55 20,47 34,49 49,20" fill="none" stroke="#185FA5" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    <polygon points="44,16 37,13 44,20" fill="#23262E"/>
+    <ellipse cx="50" cy="16" rx="6.5" ry="5" fill="#23262E"/>
+    <circle cx="55" cy="12" r="4" fill="#23262E"/>
+    <polygon points="59,11 65,12.5 59,14" fill="#D85A30"/>
+    <circle cx="56" cy="11" r="1" fill="#F3F1EA"/>
+    <line x1="48" y1="20" x2="47" y2="25" stroke="#23262E" stroke-width="1.6"/>
+    <line x1="52" y1="20" x2="53" y2="25" stroke="#23262E" stroke-width="1.6"/>
+    <path class="wing5" d="M50,15 C54,12 60,14 58,20 C54,21 50,19 48,16 Z" fill="#3A3F4A"/>
+  </svg>
+  <div>
+    <h1>RevOps Weekly Conversion Report</h1>
+    <div class="meta">Beam AI Deals &middot; calendar YTD &middot; excludes blank Business Unit &middot; <span id="gen"></span></div>
+  </div>
+</div>
 <div class="tabs"><button class="tb active" data-u="Overall">Overall</button><button class="tb" data-u="ACE">ACE</button><button class="tb" data-u="SPADE">SPADE</button></div>
 <div class="controls">
   <div class="seg" data-group="gran"><button class="sg active" data-v="weekly">Weekly</button><button class="sg" data-v="monthly">Monthly</button></div>
