@@ -178,7 +178,7 @@ def build_report_data():
                 for bu in ("ACE", "SPADE")}
 
     return {
-        "generated": datetime.now(ET).strftime("%Y-%m-%d %H:%M %Z"),
+        "generated": datetime.now(ZoneInfo("Asia/Kolkata")).strftime("%Y-%m-%d %H:%M IST"),
         "weekly": {"labels": [fmt_week(k) for k in week_keys], **pack("weekly", week_keys)},
         "monthly": {"labels": [datetime.fromisoformat(k).strftime("%b") for k in month_keys],
                     **pack("monthly", month_keys)},
