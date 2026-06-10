@@ -110,9 +110,9 @@ h1{font-size:20px;font-weight:600;margin:0 0 4px;}
 .wing5{transform-origin:50px 15px;animation:flap5 0.65s ease-in-out infinite}
 .line5{stroke-dasharray:90;animation:draw5 2.8s ease-in-out infinite}
 .spinning{animation:spin .8s linear infinite}
-.egg-bubble{position:fixed;background:#23262E;color:#fff;padding:7px 13px;border-radius:14px;font-size:13px;font-weight:600;opacity:0;transform:translate(-50%,calc(-100% + 6px)) scale(.96);transition:opacity .15s ease,transform .15s ease;pointer-events:none;z-index:1000;white-space:nowrap;box-shadow:0 4px 14px rgba(0,0,0,.18);}
-.egg-bubble::after{content:'';position:absolute;left:50%;bottom:-6px;transform:translateX(-50%);border-left:6px solid transparent;border-right:6px solid transparent;border-top:6px solid #23262E;}
-.egg-bubble.show{opacity:1;transform:translate(-50%,-100%) scale(1);}
+.egg-bubble{position:fixed;background:rgba(35,38,46,0.55);color:#fff;padding:6px 12px;border-radius:14px;font-size:12px;font-weight:500;opacity:0;transform:translate(-50%,calc(-100% + 6px)) scale(.96);transition:opacity .2s ease,transform .2s ease;pointer-events:none;z-index:1000;white-space:nowrap;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);}
+.egg-bubble::after{content:'';position:absolute;left:50%;bottom:-5px;transform:translateX(-50%);border-left:5px solid transparent;border-right:5px solid transparent;border-top:5px solid rgba(35,38,46,0.55);}
+.egg-bubble.show{opacity:.85;transform:translate(-50%,-100%) scale(1);}
 </style></head><body>
 <div class="hdr">
   <svg class="logo" viewBox="0 0 64 64" role="img" aria-label="crow perched atop a rising trend line">
