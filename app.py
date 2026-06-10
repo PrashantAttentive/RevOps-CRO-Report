@@ -110,6 +110,9 @@ h1{font-size:20px;font-weight:600;margin:0 0 4px;}
 .wing5{transform-origin:50px 15px;animation:flap5 0.65s ease-in-out infinite}
 .line5{stroke-dasharray:90;animation:draw5 2.8s ease-in-out infinite}
 .spinning{animation:spin .8s linear infinite}
+.egg-bubble{position:fixed;background:#23262E;color:#fff;padding:7px 13px;border-radius:14px;font-size:13px;font-weight:600;opacity:0;transform:translate(-50%,calc(-100% + 6px)) scale(.96);transition:opacity .15s ease,transform .15s ease;pointer-events:none;z-index:1000;white-space:nowrap;box-shadow:0 4px 14px rgba(0,0,0,.18);}
+.egg-bubble::after{content:'';position:absolute;left:50%;bottom:-6px;transform:translateX(-50%);border-left:6px solid transparent;border-right:6px solid transparent;border-top:6px solid #23262E;}
+.egg-bubble.show{opacity:1;transform:translate(-50%,-100%) scale(1);}
 </style></head><body>
 <div class="hdr">
   <svg class="logo" viewBox="0 0 64 64" role="img" aria-label="crow perched atop a rising trend line">
@@ -125,7 +128,7 @@ h1{font-size:20px;font-weight:600;margin:0 0 4px;}
   </svg>
   <div>
     <h1>RevOps Weekly Conversion Report</h1>
-    <div class="meta">Beam AI Deals &middot; calendar YTD &middot; excludes blank Business Unit &middot; <span id="gen">loading&hellip;</span></div>
+    <div class="meta">Beam AI Deals &middot; <span id="gen">loading&hellip;</span></div>
   </div>
   <div class="spacer"></div>
   <button class="refresh" id="refreshBtn"><svg id="refreshIcon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg><span id="refreshLabel">Refresh</span></button>
@@ -143,6 +146,7 @@ h1{font-size:20px;font-weight:600;margin:0 0 4px;}
 <div class="lg"><span><i style="border-top:2px dashed #0F6E56;"></i>QDD / DCC</span><span><i style="border-top:2px dotted #D85A30;"></i>Pilots / DCC</span></div>
 <div class="scroll"><div class="inner" id="in2"><canvas id="c2"></canvas></div></div>
 <div class="hint" id="hint2"></div>
+<div class="egg-bubble" id="eggBubble">Hey Harsh!</div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
 <script>
@@ -194,9 +198,15 @@ async function load(force){
   }catch(e){document.getElementById('gen').textContent='error loading data';}
   btn.disabled=false;ic.classList.remove('spinning');lb.textContent='Refresh';
 }
+function popEgg(el){
+  const b=document.getElementById('eggBubble'),r=el.getBoundingClientRect();
+  b.style.left=(r.left+r.width/2)+'px';b.style.top=r.top+'px';
+  b.classList.add('show');clearTimeout(b._t);
+  b._t=setTimeout(()=>b.classList.remove('show'),500);
+}
 document.getElementById('refreshBtn').addEventListener('click',()=>load(true));
 document.querySelectorAll('.tb').forEach(t=>t.addEventListener('click',()=>{document.querySelectorAll('.tb').forEach(x=>x.classList.remove('active'));t.classList.add('active');unit=t.dataset.u;render();}));
-document.querySelectorAll('.seg').forEach(g=>g.querySelectorAll('.sg').forEach(b=>b.addEventListener('click',()=>{g.querySelectorAll('.sg').forEach(x=>x.classList.remove('active'));b.classList.add('active');if(g.dataset.group==='gran')gran=b.dataset.v;else basis=b.dataset.v;render();})));
+document.querySelectorAll('.seg').forEach(g=>g.querySelectorAll('.sg').forEach(b=>b.addEventListener('click',()=>{g.querySelectorAll('.sg').forEach(x=>x.classList.remove('active'));b.classList.add('active');if(g.dataset.group==='gran')gran=b.dataset.v;else basis=b.dataset.v;if(g.dataset.group==='basis'&&b.dataset.v==='without')popEgg(b);render();})));
 load(false);
 </script></body></html>
 """
