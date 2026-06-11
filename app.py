@@ -101,8 +101,10 @@ h1{font-size:20px;font-weight:600;margin:0 0 4px;}
 .ct{font-size:15px;font-weight:600;margin-bottom:4px;}
 .lg{display:flex;flex-wrap:wrap;gap:14px;margin-bottom:6px;font-size:11px;color:#5F5E5A;}
 .lg span{display:flex;align-items:center;gap:5px;}.lg i{width:15px;height:0;display:inline-block;}
-.scroll{overflow-x:auto;}
+.scroll{overflow-x:auto;flex:1;}
 .inner{position:relative;height:300px;}
+.chartblock{display:flex;align-items:stretch;}
+.yaxis{flex:none;width:44px;height:300px;}
 .hint{font-size:10px;color:#A8A6A0;margin:-4px 0 22px;}
 @keyframes flap5{0%,100%{transform:rotate(-14deg)}50%{transform:rotate(10deg)}}
 @keyframes draw5{0%{stroke-dashoffset:90}60%,100%{stroke-dashoffset:0}}
@@ -140,11 +142,11 @@ h1{font-size:20px;font-weight:600;margin:0 0 4px;}
 </div>
 <div id="t1" class="ct"></div>
 <div class="lg"><span><i style="border-top:2px solid #185FA5;"></i>DCC / total</span><span><i style="border-top:2px dashed #0F6E56;"></i>QDD / total</span><span><i style="border-top:2px dotted #D85A30;"></i>Pilots / total</span></div>
-<div class="scroll"><div class="inner" id="in1"><canvas id="c1"></canvas></div></div>
+<div class="chartblock"><div class="yaxis"><canvas id="c1y"></canvas></div><div class="scroll" id="s1"><div class="inner" id="in1"><canvas id="c1"></canvas></div></div></div>
 <div class="hint" id="hint1"></div>
 <div class="ct">Conversion as % of DCC</div>
 <div class="lg"><span><i style="border-top:2px dashed #0F6E56;"></i>QDD / DCC</span><span><i style="border-top:2px dotted #D85A30;"></i>Pilots / DCC</span></div>
-<div class="scroll"><div class="inner" id="in2"><canvas id="c2"></canvas></div></div>
+<div class="chartblock"><div class="yaxis"><canvas id="c2y"></canvas></div><div class="scroll" id="s2"><div class="inner" id="in2"><canvas id="c2"></canvas></div></div></div>
 <div class="hint" id="hint2"></div>
 <div class="egg-bubble" id="eggBubble">Hey Harsh!</div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
@@ -156,10 +158,13 @@ const add=(a,b)=>a.map((v,i)=>v+b[i]);
 const sel=(d,m)=>unit==='Overall'?add(d.ACE[m],d.SPADE[m]):d[unit][m];
 const pct=(a,b)=>a.map((v,i)=>b[i]?Math.round(v/b[i]*1000)/10:null);
 const ymax=arrs=>{let m=0;arrs.forEach(a=>a.forEach(v=>{if(v!=null&&v>m)m=v;}));return Math.min(100,Math.ceil((m+8)/10)*10);};
-const opts=()=>({responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:false},tooltip:{mode:'index',intersect:false,callbacks:{label:c=>c.dataset.label+': '+c.parsed.y+'%'}},datalabels:{display:true,align:'top',anchor:'end',offset:3,color:c=>c.dataset.borderColor,font:{size:9,weight:500},formatter:v=>v===null?'':v+'%'}},scales:{x:{ticks:{autoSkip:false,maxRotation:0,font:{size:10}},grid:{display:false}},y:{min:0,ticks:{callback:v=>v+'%'},grid:{color:'rgba(128,128,128,0.15)'}}}});
+const opts=()=>({responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:false},tooltip:{mode:'index',intersect:false,callbacks:{label:c=>c.dataset.label+': '+c.parsed.y+'%'}},datalabels:{display:true,align:'top',anchor:'end',offset:3,color:c=>c.dataset.borderColor,font:{size:9,weight:500},formatter:v=>v===null?'':v+'%'}},scales:{x:{ticks:{autoSkip:false,maxRotation:0,font:{size:10}},grid:{display:false}},y:{min:0,grid:{color:'rgba(128,128,128,0.15)'},border:{display:false},ticks:{display:true,color:'rgba(0,0,0,0)',font:{size:10},callback:v=>v+'%'},afterFit:function(a){a.width=0;}}}});
+const axisOpts=()=>({responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false},tooltip:{enabled:false},datalabels:{display:false}},scales:{x:{display:true,grid:{display:false},border:{display:false},ticks:{display:true,color:'rgba(0,0,0,0)',font:{size:10},maxRotation:0,autoSkip:false}},y:{min:0,grid:{display:false},border:{display:false},ticks:{callback:v=>v+'%',font:{size:10}}}});
 const mk=(id,ds)=>new Chart(document.getElementById(id),{type:'line',data:{labels:[],datasets:ds},options:opts()});
 const c1=mk('c1',[{label:'DCC / total',borderColor:'#185FA5',backgroundColor:'#185FA5',pointRadius:3,tension:0.3,data:[]},{label:'QDD / total',borderColor:'#0F6E56',backgroundColor:'#0F6E56',borderDash:[6,4],pointRadius:3,tension:0.3,data:[]},{label:'Pilots / total',borderColor:'#D85A30',backgroundColor:'#D85A30',borderDash:[2,3],pointRadius:4,tension:0.3,data:[]}]);
 const c2=mk('c2',[{label:'QDD / DCC',borderColor:'#0F6E56',backgroundColor:'#0F6E56',borderDash:[6,4],pointRadius:3,tension:0.3,data:[]},{label:'Pilots / DCC',borderColor:'#D85A30',backgroundColor:'#D85A30',borderDash:[2,3],pointRadius:4,tension:0.3,data:[]}]);
+const mkAxis=id=>new Chart(document.getElementById(id),{type:'line',data:{labels:[''],datasets:[{data:[]}]},options:axisOpts()});
+const c1y=mkAxis('c1y'),c2y=mkAxis('c2y');
 function setWidth(){
   const n=DATA[gran].labels.length;
   const w=gran==='weekly'?Math.max(720,n*66)+'px':'100%';
@@ -180,7 +185,11 @@ function render(){
   c1.data.datasets.forEach((ds,i)=>ds.data=a1[i]);
   c2.data.datasets.forEach((ds,i)=>ds.data=a2[i]);
   c1.options.scales.y.max=ymax(a1);c2.options.scales.y.max=ymax(a2);
+  c1y.options.scales.y.max=ymax(a1);c2y.options.scales.y.max=ymax(a2);
   c1.resize();c2.resize();c1.update();c2.update();
+  c1y.resize();c2y.resize();c1y.update();c2y.update();
+  if(gran==='weekly'){requestAnimationFrame(()=>{const s1=document.getElementById('s1'),s2=document.getElementById('s2');s1.scrollLeft=s1.scrollWidth;s2.scrollLeft=s2.scrollWidth;});}
+  else{document.getElementById('s1').scrollLeft=0;document.getElementById('s2').scrollLeft=0;}
   document.getElementById('t1').textContent='Conversion as % of total demos ('+(basis==='with'?'incl.':'excl.')+' Cancelled)';
 }
 // sync horizontal scroll between the two charts
