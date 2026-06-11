@@ -101,8 +101,16 @@ h1{font-size:20px;font-weight:600;margin:0 0 4px;}
 .ct{font-size:15px;font-weight:600;margin-bottom:4px;}
 .lg{display:flex;flex-wrap:wrap;gap:14px;margin-bottom:6px;font-size:11px;color:#5F5E5A;}
 .lg span{display:flex;align-items:center;gap:5px;}.lg i{width:15px;height:0;display:inline-block;}
-.scroll{overflow-x:auto;}
+.info{position:relative;display:inline-flex;align-items:center;margin-left:3px;cursor:help;}
+.info .ic{width:13px;height:13px;border-radius:50%;border:1px solid #A8A6A0;color:#8A8880;font-size:9px;font-weight:700;font-style:normal;display:inline-flex;align-items:center;justify-content:center;line-height:1;}
+.info:hover .ic{border-color:#185FA5;color:#185FA5;}
+.info .tip{position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%) translateY(4px);background:#23262E;color:#fff;padding:8px 11px;border-radius:10px;font-size:11px;font-weight:400;line-height:1.45;width:235px;opacity:0;visibility:hidden;transition:opacity .15s ease,transform .15s ease;z-index:1000;box-shadow:0 6px 18px rgba(0,0,0,0.18);pointer-events:none;text-align:left;}
+.info .tip::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:5px solid transparent;border-top-color:#23262E;}
+.info:hover .tip{opacity:1;visibility:visible;transform:translateX(-50%) translateY(0);}
+.scroll{overflow-x:auto;flex:1;}
 .inner{position:relative;height:300px;}
+.chartblock{display:flex;align-items:stretch;}
+.yaxis{flex:none;width:44px;height:300px;}
 .hint{font-size:10px;color:#A8A6A0;margin:-4px 0 22px;}
 @keyframes flap5{0%,100%{transform:rotate(-14deg)}50%{transform:rotate(10deg)}}
 @keyframes draw5{0%{stroke-dashoffset:90}60%,100%{stroke-dashoffset:0}}
@@ -139,12 +147,12 @@ h1{font-size:20px;font-weight:600;margin:0 0 4px;}
   <div class="seg" data-group="basis"><button class="sg active" data-v="with">Total incl. Cancelled</button><button class="sg" data-v="without">Total excl. Cancelled</button></div>
 </div>
 <div id="t1" class="ct"></div>
-<div class="lg"><span><i style="border-top:2px solid #185FA5;"></i>DCC / total</span><span><i style="border-top:2px dashed #0F6E56;"></i>QDD / total</span><span><i style="border-top:2px dotted #D85A30;"></i>Pilots / total</span></div>
-<div class="scroll"><div class="inner" id="in1"><canvas id="c1"></canvas></div></div>
+<div class="lg"><span><i style="border-top:2px solid #185FA5;"></i>DCC / total<span class="info"><span class="ic">i</span><span class="tip">DCC (Demo Calls Completed) = demos that were completed, excluding Cancelled and No Show.<br>Total Demos = Total Demos Booked minus Junk/Wrong ICP.</span></span></span><span><i style="border-top:2px dashed #0F6E56;"></i>QDD / total<span class="info"><span class="ic">i</span><span class="tip">QDD (Qualified Deals) = demos that progressed to Opportunity Identified or beyond.<br>Total Demos = Total Demos Booked minus Junk/Wrong ICP.</span></span></span><span><i style="border-top:2px dotted #D85A30;"></i>Pilots / total<span class="info"><span class="ic">i</span><span class="tip">Pilots = deals that started a pilot or progressed beyond it.<br>Total Demos = Total Demos Booked minus Junk/Wrong ICP.</span></span></span></div>
+<div class="chartblock"><div class="yaxis"><canvas id="c1y"></canvas></div><div class="scroll" id="s1"><div class="inner" id="in1"><canvas id="c1"></canvas></div></div></div>
 <div class="hint" id="hint1"></div>
 <div class="ct">Conversion as % of DCC</div>
-<div class="lg"><span><i style="border-top:2px dashed #0F6E56;"></i>QDD / DCC</span><span><i style="border-top:2px dotted #D85A30;"></i>Pilots / DCC</span></div>
-<div class="scroll"><div class="inner" id="in2"><canvas id="c2"></canvas></div></div>
+<div class="lg"><span><i style="border-top:2px dashed #0F6E56;"></i>QDD / DCC<span class="info"><span class="ic">i</span><span class="tip">QDD (Qualified Deals) = demos that progressed to Opportunity Identified or beyond.<br>DCC (Demo Calls Completed) = demos that were completed, excluding Cancelled and No Show.</span></span></span><span><i style="border-top:2px dotted #D85A30;"></i>Pilots / DCC<span class="info"><span class="ic">i</span><span class="tip">Pilots = deals that started a pilot or progressed beyond it.<br>DCC (Demo Calls Completed) = demos that were completed, excluding Cancelled and No Show.</span></span></span></div>
+<div class="chartblock"><div class="yaxis"><canvas id="c2y"></canvas></div><div class="scroll" id="s2"><div class="inner" id="in2"><canvas id="c2"></canvas></div></div></div>
 <div class="hint" id="hint2"></div>
 <div class="egg-bubble" id="eggBubble">Hey Harsh!</div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
@@ -156,10 +164,13 @@ const add=(a,b)=>a.map((v,i)=>v+b[i]);
 const sel=(d,m)=>unit==='Overall'?add(d.ACE[m],d.SPADE[m]):d[unit][m];
 const pct=(a,b)=>a.map((v,i)=>b[i]?Math.round(v/b[i]*1000)/10:null);
 const ymax=arrs=>{let m=0;arrs.forEach(a=>a.forEach(v=>{if(v!=null&&v>m)m=v;}));return Math.min(100,Math.ceil((m+8)/10)*10);};
-const opts=()=>({responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:false},tooltip:{mode:'index',intersect:false,callbacks:{label:c=>c.dataset.label+': '+c.parsed.y+'%'}},datalabels:{display:true,align:'top',anchor:'end',offset:3,color:c=>c.dataset.borderColor,font:{size:9,weight:500},formatter:v=>v===null?'':v+'%'}},scales:{x:{ticks:{autoSkip:false,maxRotation:0,font:{size:10}},grid:{display:false}},y:{min:0,ticks:{callback:v=>v+'%'},grid:{color:'rgba(128,128,128,0.15)'}}}});
+const opts=()=>({responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:false},tooltip:{mode:'index',intersect:false,callbacks:{label:c=>c.dataset.label+': '+c.parsed.y+'%'}},datalabels:{display:true,align:'top',anchor:'end',offset:3,color:c=>c.dataset.borderColor,font:{size:9,weight:500},formatter:v=>v===null?'':v+'%'}},scales:{x:{ticks:{autoSkip:false,maxRotation:0,font:{size:10}},grid:{display:false}},y:{min:0,grid:{color:'rgba(128,128,128,0.15)'},border:{display:false},ticks:{display:true,color:'rgba(0,0,0,0)',font:{size:10},callback:v=>v+'%'},afterFit:function(a){a.width=0;}}}});
+const axisOpts=()=>({responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false},tooltip:{enabled:false},datalabels:{display:false}},scales:{x:{display:true,grid:{display:false},border:{display:false},ticks:{display:true,color:'rgba(0,0,0,0)',font:{size:10},maxRotation:0,autoSkip:false}},y:{min:0,grid:{display:false},border:{display:false},ticks:{callback:v=>v+'%',font:{size:10}}}});
 const mk=(id,ds)=>new Chart(document.getElementById(id),{type:'line',data:{labels:[],datasets:ds},options:opts()});
 const c1=mk('c1',[{label:'DCC / total',borderColor:'#185FA5',backgroundColor:'#185FA5',pointRadius:3,tension:0.3,data:[]},{label:'QDD / total',borderColor:'#0F6E56',backgroundColor:'#0F6E56',borderDash:[6,4],pointRadius:3,tension:0.3,data:[]},{label:'Pilots / total',borderColor:'#D85A30',backgroundColor:'#D85A30',borderDash:[2,3],pointRadius:4,tension:0.3,data:[]}]);
 const c2=mk('c2',[{label:'QDD / DCC',borderColor:'#0F6E56',backgroundColor:'#0F6E56',borderDash:[6,4],pointRadius:3,tension:0.3,data:[]},{label:'Pilots / DCC',borderColor:'#D85A30',backgroundColor:'#D85A30',borderDash:[2,3],pointRadius:4,tension:0.3,data:[]}]);
+const mkAxis=id=>new Chart(document.getElementById(id),{type:'line',data:{labels:[''],datasets:[{data:[]}]},options:axisOpts()});
+const c1y=mkAxis('c1y'),c2y=mkAxis('c2y');
 function setWidth(){
   const n=DATA[gran].labels.length;
   const w=gran==='weekly'?Math.max(720,n*66)+'px':'100%';
@@ -180,7 +191,11 @@ function render(){
   c1.data.datasets.forEach((ds,i)=>ds.data=a1[i]);
   c2.data.datasets.forEach((ds,i)=>ds.data=a2[i]);
   c1.options.scales.y.max=ymax(a1);c2.options.scales.y.max=ymax(a2);
+  c1y.options.scales.y.max=ymax(a1);c2y.options.scales.y.max=ymax(a2);
   c1.resize();c2.resize();c1.update();c2.update();
+  c1y.resize();c2y.resize();c1y.update();c2y.update();
+  if(gran==='weekly'){requestAnimationFrame(()=>{const s1=document.getElementById('s1'),s2=document.getElementById('s2');s1.scrollLeft=s1.scrollWidth;s2.scrollLeft=s2.scrollWidth;});}
+  else{document.getElementById('s1').scrollLeft=0;document.getElementById('s2').scrollLeft=0;}
   document.getElementById('t1').textContent='Conversion as % of total demos ('+(basis==='with'?'incl.':'excl.')+' Cancelled)';
 }
 // sync horizontal scroll between the two charts
@@ -191,11 +206,13 @@ async function load(force){
   const btn=document.getElementById('refreshBtn'),ic=document.getElementById('refreshIcon'),lb=document.getElementById('refreshLabel');
   btn.disabled=true;ic.classList.add('spinning');lb.textContent=force?'Refreshing\u2026':'Loading\u2026';
   try{
-    const r=await fetch(force?'/refresh':'/data',{method:force?'POST':'GET'});
+    const ctl=new AbortController();const to=setTimeout(()=>ctl.abort(),90000);
+    const r=await fetch(force?'/refresh':'/data',{method:force?'POST':'GET',signal:ctl.signal});
+    clearTimeout(to);
     const j=await r.json();
     if(j.error){document.getElementById('gen').textContent='error: '+j.error;}
     else{DATA=j;document.getElementById('gen').textContent='updated '+j.generated;render();}
-  }catch(e){document.getElementById('gen').textContent='error loading data';}
+  }catch(e){document.getElementById('gen').textContent=e.name==='AbortError'?'timed out \u2014 click Refresh to retry':'error loading data';}
   btn.disabled=false;ic.classList.remove('spinning');lb.textContent='Refresh';
 }
 function popEgg(el){
