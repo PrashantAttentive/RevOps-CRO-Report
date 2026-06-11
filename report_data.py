@@ -70,21 +70,26 @@ def fetch_deals(headers, properties, start_ms, end_ms):
         {"propertyName": "meeting_date___time___sales", "operator": "GTE", "value": str(start_ms)},
         {"propertyName": "meeting_date___time___sales", "operator": "LT", "value": str(end_ms)},
     ]
-    deals, after = [], None
+    deals, after, pages = [], None, 0
     while True:
         body = {"filterGroups": [{"filters": filters}], "properties": properties,
                 "limit": 100, "sorts": [{"propertyName": "hs_object_id", "direction": "ASCENDING"}]}
         if after:
             body["after"] = after
-        resp = requests.post(url, headers=headers, json=body, timeout=60)
+        for attempt in range(6):
+            resp = requests.post(url, headers=headers, json=body, timeout=(10, 30))
+            if resp.status_code == 429:
+                time.sleep(min(2 ** attempt, 16))
+                continue
+            break
         if resp.status_code == 429:
-            time.sleep(2)
-            continue
+            raise RuntimeError("HubSpot rate limit: retries exhausted while fetching deals.")
         resp.raise_for_status()
         data = resp.json()
         deals.extend(data.get("results", []))
         after = data.get("paging", {}).get("next", {}).get("after")
-        if not after:
+        pages += 1
+        if not after or pages >= 200:
             break
     return deals
 

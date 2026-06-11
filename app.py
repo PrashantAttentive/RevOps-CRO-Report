@@ -200,11 +200,13 @@ async function load(force){
   const btn=document.getElementById('refreshBtn'),ic=document.getElementById('refreshIcon'),lb=document.getElementById('refreshLabel');
   btn.disabled=true;ic.classList.add('spinning');lb.textContent=force?'Refreshing\u2026':'Loading\u2026';
   try{
-    const r=await fetch(force?'/refresh':'/data',{method:force?'POST':'GET'});
+    const ctl=new AbortController();const to=setTimeout(()=>ctl.abort(),90000);
+    const r=await fetch(force?'/refresh':'/data',{method:force?'POST':'GET',signal:ctl.signal});
+    clearTimeout(to);
     const j=await r.json();
     if(j.error){document.getElementById('gen').textContent='error: '+j.error;}
     else{DATA=j;document.getElementById('gen').textContent='updated '+j.generated;render();}
-  }catch(e){document.getElementById('gen').textContent='error loading data';}
+  }catch(e){document.getElementById('gen').textContent=e.name==='AbortError'?'timed out \u2014 click Refresh to retry':'error loading data';}
   btn.disabled=false;ic.classList.remove('spinning');lb.textContent='Refresh';
 }
 function popEgg(el){
